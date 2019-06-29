@@ -1,0 +1,120 @@
+<html>
+	<head></head>
+	<body>
+		<h1>Products App</h1>
+		<button id="fetchAll">Fetch all products</button>
+		<input type="number" id="id"></input>
+		<button id="fetchId">Fetch by id</button>
+			<div style='color: red;' id='ws'></div>
+		<div id="display">
+
+		</div>
+		<div>
+			<h2>Create product</h2>
+			<label for="id">
+				Product ID
+				<input type="number" name="id" id="newId"/>
+			</label>
+			<button id="create">Create product</button>
+		</div>
+		<div>
+			<h2>Delete product</h2>
+			<label for="id">
+					Product ID
+					<input type="number" name="id" id="deleteId"/>
+				</label>
+				<button id="delete">Delete product</button>
+		</div>
+		<script src="/socket.io/socket.io.js"></script>
+<script>
+	const ws = document.getElementById('ws')
+	var socket = io();
+	socket.on('creation', id => {
+		ws.innerHTML = `<h4>A PRODUCT HAS BEEN CREATED WITH THE ID ${id}</h4>`
+	})
+	socket.on('deletion', id => {
+		ws.innerHTML = `<h4>A PRODUCT WITH THE ID ${id} HAS BEEN DELETED</h4>`
+	})
+</script>
+		<script>
+			const fetchAllBtn = document.getElementById('fetchAll')
+			const fetchIdBtn = document.getElementById('fetchId')
+			const createBtn = document.getElementById('create')
+			const deleteBtn = document.getElementById('delete')
+			const display = document.getElementById('display')
+
+			deleteBtn.addEventListener('click', e => {
+				let id = document.getElementById('deleteId').value
+				fetch('/products/delete', {
+					method: 'POST',
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({id})
+				})
+			})
+
+			createBtn.addEventListener('click', e => {
+				let id = document.getElementById('newId').value
+				fetch('/products/create', {
+					method: 'POST',
+					headers: {
+						'Accept': 'application/json',
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({id})
+				})
+			})
+			fetchAllBtn.addEventListener('click', e => {
+				fetch('/products')
+				.then(res => res.json())
+				.then(res => {
+					display.innerHTML = `
+						<h2>PRODUCTS</h2>
+						${displayProducts(res)}
+					`
+				} )
+				.catch(e => {
+					display.innerHTML = 'NO PRODUCTS'
+				})
+			})
+			const displayProducts = products => {
+				return products.map(p => (
+					`
+					<p>
+						Product ID: ${p.id}	<br />
+						${displayTransactions(p.transactions)}
+					</p>
+					------
+					`
+				)).join('')
+			}
+			const displayTransactions = transactions => {
+				return transactions.map(t => (
+					`<p>ID is ${t.id} / Quantity is ${t.quantity} Time is ${t.time}</p>`
+				)).join('')
+			}
+			fetchIdBtn.addEventListener('click', e => {
+				const id = document.getElementById('id').value
+				fetch(`/products/${id}`)
+				.then(res => res.json())
+				.then(res => {
+					if(res){
+						display.innerHTML = `<h2>PRODUCT</h2>
+						<p>
+							Product ID: ${res.id}
+						</p>
+						<h3>Transactions:</h3>
+							${displayTransactions(res.transactions)}`
+					} else {
+						display.innerHTML = 'NO PRODUCT'
+					}
+				})
+				.catch(e => {
+					display.innerHTML = 'NO PRODUCT'
+				})
+			})
+		</script>
+	</body>
+</html>
